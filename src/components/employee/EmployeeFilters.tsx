@@ -37,13 +37,37 @@ const EmployeeFilters: React.FC = () => {
 
   const ministries = getUniqueMinistries();
   const filteredEmployees = getFilteredEmployees();
-  const activeFilterCount = Object.keys(filters).filter((key) => {
-    const value = filters[key as keyof EmployeeFilter];
+
+  // Calculate active filter count safely
+  const activeFilterCount = Object.entries(filters).filter(([key, value]) => {
+    if (key === 'ageRange' && value && typeof value === 'object') {
+      const ageRange = value as { min?: number; max?: number };
+      return (ageRange.min !== undefined && ageRange.min > 0) ||
+             (ageRange.max !== undefined && ageRange.max < 100);
+    }
     return value !== undefined && value !== "" && value !== null;
   }).length;
 
   const handleApplyFilters = () => {
-    setFilters(localFilters);
+    // Clean up the filters before applying
+    const cleanedFilters: EmployeeFilter = {};
+
+    Object.entries(localFilters).forEach(([key, value]) => {
+      if (key === 'ageRange' && value && typeof value === 'object') {
+        const ageRange = value as { min?: number; max?: number };
+        if ((ageRange.min !== undefined && ageRange.min > 0) ||
+            (ageRange.max !== undefined && ageRange.max < 100)) {
+          cleanedFilters.ageRange = {
+            min: ageRange.min || 0,
+            max: ageRange.max || 100
+          };
+        }
+      } else if (value && value !== '') {
+        (cleanedFilters as any)[key] = value;
+      }
+    });
+
+    setFilters(cleanedFilters);
     setIsOpen(false);
   };
 
@@ -53,17 +77,21 @@ const EmployeeFilters: React.FC = () => {
     setIsOpen(false);
   };
 
-  type AgeRange = {
-    min?: number;
-    max?: number;
-  };
-
-  type FilterValue = string | number | undefined | AgeRange;
-
-  const updateLocalFilter = (key: keyof EmployeeFilter, value: FilterValue) => {
+  const updateLocalFilter = (key: keyof EmployeeFilter, value: any) => {
     setLocalFilters((prev) => ({
       ...prev,
       [key]: value || undefined,
+    }));
+  };
+
+  const updateAgeRange = (type: 'min' | 'max', value: string) => {
+    const numValue = value ? parseInt(value) : undefined;
+    setLocalFilters((prev) => ({
+      ...prev,
+      ageRange: {
+        ...prev.ageRange,
+        [type]: numValue,
+      },
     }));
   };
 
@@ -134,7 +162,7 @@ const EmployeeFilters: React.FC = () => {
                         <Select
                           value={localFilters.designation || ""}
                           onValueChange={(value) =>
-                            updateLocalFilter("designation", value)
+                            updateLocalFilter("designation", value === "" ? undefined : value)
                           }
                         >
                           <SelectTrigger>
@@ -156,7 +184,7 @@ const EmployeeFilters: React.FC = () => {
                         <Select
                           value={localFilters.ministry || ""}
                           onValueChange={(value) =>
-                            updateLocalFilter("ministry", value)
+                            updateLocalFilter("ministry", value === "" ? undefined : value)
                           }
                         >
                           <SelectTrigger>
@@ -178,7 +206,7 @@ const EmployeeFilters: React.FC = () => {
                         <Select
                           value={localFilters.gender || ""}
                           onValueChange={(value) =>
-                            updateLocalFilter("gender", value)
+                            updateLocalFilter("gender", value === "" ? undefined : value)
                           }
                         >
                           <SelectTrigger>
@@ -200,7 +228,7 @@ const EmployeeFilters: React.FC = () => {
                         <Select
                           value={localFilters.salaryCode || ""}
                           onValueChange={(value) =>
-                            updateLocalFilter("salaryCode", value)
+                            updateLocalFilter("salaryCode", value === "" ? undefined : value)
                           }
                         >
                           <SelectTrigger>
@@ -245,24 +273,18 @@ const EmployeeFilters: React.FC = () => {
                         <Input
                           type="number"
                           placeholder="Min age"
+                          min="18"
+                          max="70"
                           value={localFilters.ageRange?.min || ""}
-                          onChange={(e) =>
-                            updateLocalFilter("ageRange", {
-                              ...localFilters.ageRange,
-                              min: parseInt(e.target.value) || 0,
-                            })
-                          }
+                          onChange={(e) => updateAgeRange("min", e.target.value)}
                         />
                         <Input
                           type="number"
                           placeholder="Max age"
+                          min="18"
+                          max="70"
                           value={localFilters.ageRange?.max || ""}
-                          onChange={(e) =>
-                            updateLocalFilter("ageRange", {
-                              ...localFilters.ageRange,
-                              max: parseInt(e.target.value) || 100,
-                            })
-                          }
+                          onChange={(e) => updateAgeRange("max", e.target.value)}
                         />
                       </div>
                     </div>
@@ -310,13 +332,14 @@ const EmployeeFilters: React.FC = () => {
 
             let displayValue = value;
             if (key === "ageRange" && typeof value === "object") {
-              displayValue = `${value.min || 0}-${value.max || 100} years`;
+              const ageRange = value as { min?: number; max?: number };
+              displayValue = `${ageRange.min || 0}-${ageRange.max || 100} years`;
             }
 
             return (
               <div key={key} className="filter-chip group">
                 <span className="capitalize">
-                  {key.replace(/([A-Z])/g, " $1").toLowerCase()}: {displayValue}
+                  {key.replace(/([A-Z])/g, " $1").toLowerCase()}: {String(displayValue)}
                 </span>
                 <button
                   onClick={() =>

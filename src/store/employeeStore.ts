@@ -103,150 +103,192 @@ export const useEmployeeStore = create<EmployeeState>((set, get) => ({
   getFilteredEmployees: () => {
     const { employees, filters, searchTerm, sortBy, sortDirection } = get();
 
-    let filtered = [...employees];
+    try {
+      let filtered = [...employees];
 
-    // Apply search term
-    if (searchTerm.trim()) {
-      const lowerSearchTerm = searchTerm.toLowerCase();
-      filtered = filtered.filter(
-        (emp) =>
-          emp.fullName.toLowerCase().includes(lowerSearchTerm) ||
-          emp.employeeNumber.toLowerCase().includes(lowerSearchTerm) ||
-          emp.nicNumber.toLowerCase().includes(lowerSearchTerm) ||
-          emp.designation.toLowerCase().includes(lowerSearchTerm) ||
-          emp.ministry.toLowerCase().includes(lowerSearchTerm)
-      );
-    }
-
-    // Apply filters
-    if (filters.employeeNumber) {
-      filtered = filtered.filter((emp) =>
-        emp.employeeNumber
-          .toLowerCase()
-          .includes(filters.employeeNumber!.toLowerCase())
-      );
-    }
-
-    if (filters.fullName) {
-      filtered = filtered.filter((emp) =>
-        emp.fullName.toLowerCase().includes(filters.fullName!.toLowerCase())
-      );
-    }
-
-    if (filters.designation) {
-      filtered = filtered.filter(
-        (emp) => emp.designation === filters.designation
-      );
-    }
-
-    if (filters.ministry) {
-      filtered = filtered.filter((emp) =>
-        emp.ministry.toLowerCase().includes(filters.ministry!.toLowerCase())
-      );
-    }
-
-    if (filters.nicNumber) {
-      filtered = filtered.filter((emp) =>
-        emp.nicNumber.toLowerCase().includes(filters.nicNumber!.toLowerCase())
-      );
-    }
-
-    if (filters.gender) {
-      filtered = filtered.filter((emp) => emp.gender === filters.gender);
-    }
-
-    if (filters.salaryCode) {
-      filtered = filtered.filter(
-        (emp) => emp.salaryCode === filters.salaryCode
-      );
-    }
-
-    if (filters.ageRange) {
-      filtered = filtered.filter(
-        (emp) =>
-          emp.age >= filters.ageRange!.min && emp.age <= filters.ageRange!.max
-      );
-    }
-
-    // Apply sorting
-    // Apply sorting
-    filtered.sort((a, b) => {
-      const aRaw = a[sortBy] as unknown;
-      const bRaw = b[sortBy] as unknown;
-
-      // Handle null/undefined
-      const aNull = aRaw === null || aRaw === undefined;
-      const bNull = bRaw === null || bRaw === undefined;
-      if (aNull && bNull) return 0;
-      if (aNull) return sortDirection === "asc" ? -1 : 1;
-      if (bNull) return sortDirection === "asc" ? 1 : -1;
-
-      // Numbers
-      if (typeof aRaw === "number" && typeof bRaw === "number") {
-        const diff = aRaw - bRaw;
-        return sortDirection === "asc" ? Math.sign(diff) : Math.sign(-diff);
+      // Apply search term
+      if (searchTerm && searchTerm.trim()) {
+        const lowerSearchTerm = searchTerm.toLowerCase();
+        filtered = filtered.filter(
+          (emp) =>
+            emp.fullName?.toLowerCase().includes(lowerSearchTerm) ||
+            emp.employeeNumber?.toLowerCase().includes(lowerSearchTerm) ||
+            emp.nicNumber?.toLowerCase().includes(lowerSearchTerm) ||
+            emp.designation?.toLowerCase().includes(lowerSearchTerm) ||
+            emp.ministry?.toLowerCase().includes(lowerSearchTerm)
+        );
       }
 
-      // Dates: either Date objects or ISO-like date strings
-      const toDate = (v: unknown): Date | null => {
-        if (v instanceof Date) return v;
-        if (typeof v === "string") {
-          // try parse; Date fallback returns Invalid Date -> check time
-          const parsed = new Date(v);
-          if (!Number.isNaN(parsed.getTime())) return parsed;
+      // Apply filters safely
+      if (filters.employeeNumber && filters.employeeNumber.trim()) {
+        filtered = filtered.filter((emp) =>
+          emp.employeeNumber
+            ?.toLowerCase()
+            .includes(filters.employeeNumber!.toLowerCase())
+        );
+      }
+
+      if (filters.fullName && filters.fullName.trim()) {
+        filtered = filtered.filter((emp) =>
+          emp.fullName?.toLowerCase().includes(filters.fullName!.toLowerCase())
+        );
+      }
+
+      if (filters.designation) {
+        filtered = filtered.filter(
+          (emp) => emp.designation === filters.designation
+        );
+      }
+
+      if (filters.ministry && filters.ministry.trim()) {
+        filtered = filtered.filter((emp) =>
+          emp.ministry?.toLowerCase().includes(filters.ministry!.toLowerCase())
+        );
+      }
+
+      if (filters.nicNumber && filters.nicNumber.trim()) {
+        filtered = filtered.filter((emp) =>
+          emp.nicNumber?.toLowerCase().includes(filters.nicNumber!.toLowerCase())
+        );
+      }
+
+      if (filters.gender) {
+        filtered = filtered.filter((emp) => emp.gender === filters.gender);
+      }
+
+      if (filters.salaryCode) {
+        filtered = filtered.filter(
+          (emp) => emp.salaryCode === filters.salaryCode
+        );
+      }
+
+      // Age range filter with safety checks
+      if (filters.ageRange) {
+        const { min, max } = filters.ageRange;
+        filtered = filtered.filter((emp) => {
+          const empAge = emp.age;
+          if (typeof empAge !== 'number' || isNaN(empAge)) return true; // Skip invalid ages
+
+          const minAge = typeof min === 'number' && !isNaN(min) ? min : 0;
+          const maxAge = typeof max === 'number' && !isNaN(max) ? max : 100;
+
+          return empAge >= minAge && empAge <= maxAge;
+        });
+      }
+
+      // Apply sorting safely
+      filtered.sort((a, b) => {
+        try {
+          const aRaw = a[sortBy] as unknown;
+          const bRaw = b[sortBy] as unknown;
+
+          // Handle null/undefined
+          const aNull = aRaw === null || aRaw === undefined;
+          const bNull = bRaw === null || bRaw === undefined;
+          if (aNull && bNull) return 0;
+          if (aNull) return sortDirection === "asc" ? -1 : 1;
+          if (bNull) return sortDirection === "asc" ? 1 : -1;
+
+          // Numbers
+          if (typeof aRaw === "number" && typeof bRaw === "number") {
+            const diff = aRaw - bRaw;
+            return sortDirection === "asc" ? Math.sign(diff) : Math.sign(-diff);
+          }
+
+          // Dates: either Date objects or ISO-like date strings
+          const toDate = (v: unknown): Date | null => {
+            if (v instanceof Date) return v;
+            if (typeof v === "string") {
+              const parsed = new Date(v);
+              if (!Number.isNaN(parsed.getTime())) return parsed;
+            }
+            return null;
+          };
+
+          const aDate = toDate(aRaw);
+          const bDate = toDate(bRaw);
+          if (aDate && bDate) {
+            const diff = aDate.getTime() - bDate.getTime();
+            return sortDirection === "asc" ? Math.sign(diff) : Math.sign(-diff);
+          }
+
+          // Fallback: string compare (case-insensitive)
+          const aStr = String(aRaw || '').toLowerCase();
+          const bStr = String(bRaw || '').toLowerCase();
+          if (aStr < bStr) return sortDirection === "asc" ? -1 : 1;
+          if (aStr > bStr) return sortDirection === "asc" ? 1 : -1;
+          return 0;
+        } catch (error) {
+          console.warn('Sorting error:', error);
+          return 0;
         }
-        return null;
-      };
+      });
 
-      const aDate = toDate(aRaw);
-      const bDate = toDate(bRaw);
-      if (aDate && bDate) {
-        const diff = aDate.getTime() - bDate.getTime();
-        return sortDirection === "asc" ? Math.sign(diff) : Math.sign(-diff);
-      }
-
-      // Fallback: string compare (case-insensitive)
-      const aStr = String(aRaw).toLowerCase();
-      const bStr = String(bRaw).toLowerCase();
-      if (aStr < bStr) return sortDirection === "asc" ? -1 : 1;
-      if (aStr > bStr) return sortDirection === "asc" ? 1 : -1;
-      return 0;
-    });
-
-    return filtered;
+      return filtered;
+    } catch (error) {
+      console.error('Error in getFilteredEmployees:', error);
+      return employees; // Return original employees if filtering fails
+    }
   },
 
   getPaginatedEmployees: () => {
-    const { currentPage, itemsPerPage } = get();
-    const filtered = get().getFilteredEmployees();
+    try {
+      const { currentPage, itemsPerPage } = get();
+      const filtered = get().getFilteredEmployees();
 
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage;
 
-    return filtered.slice(startIndex, endIndex);
+      return filtered.slice(startIndex, endIndex);
+    } catch (error) {
+      console.error('Error in getPaginatedEmployees:', error);
+      return [];
+    }
   },
 
   getTotalPages: () => {
-    const { itemsPerPage } = get();
-    const filtered = get().getFilteredEmployees();
+    try {
+      const { itemsPerPage } = get();
+      const filtered = get().getFilteredEmployees();
 
-    return Math.ceil(filtered.length / itemsPerPage);
+      return Math.ceil(filtered.length / itemsPerPage);
+    } catch (error) {
+      console.error('Error in getTotalPages:', error);
+      return 1;
+    }
   },
 
   getEmployeeById: (id) => {
-    const { employees } = get();
-    return employees.find((emp) => emp._id === id);
+    try {
+      const { employees } = get();
+      return employees.find((emp) => emp._id === id);
+    } catch (error) {
+      console.error('Error in getEmployeeById:', error);
+      return undefined;
+    }
   },
 
   getEmployeeByNumber: (employeeNumber) => {
-    const { employees } = get();
-    return employees.find((emp) => emp.employeeNumber === employeeNumber);
+    try {
+      const { employees } = get();
+      return employees.find((emp) => emp.employeeNumber === employeeNumber);
+    } catch (error) {
+      console.error('Error in getEmployeeByNumber:', error);
+      return undefined;
+    }
   },
 
   getUniqueMinistries: () => {
-    const { employees } = get();
-    const ministries = employees.map((emp) => emp.ministry.trim());
-    return [...new Set(ministries)].sort();
+    try {
+      const { employees } = get();
+      const ministries = employees
+        .map((emp) => emp.ministry?.trim())
+        .filter(Boolean);
+      return [...new Set(ministries)].sort();
+    } catch (error) {
+      console.error('Error in getUniqueMinistries:', error);
+      return [];
+    }
   },
 
   resetState: () =>

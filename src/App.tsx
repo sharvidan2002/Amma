@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard';
 import Employees from './pages/Employees';
 import AddEmployee from './pages/AddEmployee';
 import Attendance from './pages/Attendance';
+import ErrorBoundary from './components/common/ErrorBoundary';
 import { useUIStore } from './store/uiStore';
 import { useEmployeeStore } from './store/employeeStore';
 import { useAttendanceStore } from './store/attendanceStore';
@@ -138,27 +139,36 @@ const App: React.FC = () => {
 
   // Load sample data on app start
   useEffect(() => {
-    setEmployees(sampleEmployees);
+    try {
+      setEmployees(sampleEmployees);
 
-    // Show monthly alert for demonstration
-    setTimeout(() => {
-      setShowAlert(true);
-    }, 2000);
+      // Show monthly alert for demonstration
+      setTimeout(() => {
+        setShowAlert(true);
+      }, 2000);
+    } catch (error) {
+      console.error('Error loading sample data:', error);
+    }
   }, [setEmployees, setShowAlert]);
 
   // Render the current page based on navigation state
   const renderCurrentPage = () => {
-    switch (currentPage) {
-      case 'dashboard':
-        return <Dashboard />;
-      case 'employees':
-        return <Employees />;
-      case 'add-employee':
-        return <AddEmployee />;
-      case 'attendance':
-        return <Attendance />;
-      default:
-        return <Dashboard />;
+    try {
+      switch (currentPage) {
+        case 'dashboard':
+          return <Dashboard />;
+        case 'employees':
+          return <Employees />;
+        case 'add-employee':
+          return <AddEmployee />;
+        case 'attendance':
+          return <Attendance />;
+        default:
+          return <Dashboard />;
+      }
+    } catch (error) {
+      console.error('Error rendering page:', error);
+      throw error; // Let error boundary handle it
     }
   };
 
@@ -222,67 +232,75 @@ const App: React.FC = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="min-h-screen bg-pearl-50">
-        <Layout>
-          {renderCurrentPage()}
-        </Layout>
+      <ErrorBoundary>
+        <div className="min-h-screen bg-pearl-50">
+          <ErrorBoundary>
+            <Layout>
+              <ErrorBoundary>
+                {renderCurrentPage()}
+              </ErrorBoundary>
+            </Layout>
+          </ErrorBoundary>
 
-        {/* Notifications */}
-        {notifications.length > 0 && (
-          <div className="fixed top-4 right-4 z-50 space-y-2 max-w-sm">
-            {notifications.slice(0, 3).map((notification) => (
-              <NotificationItem key={notification.id} notification={notification} />
-            ))}
-            {notifications.length > 3 && (
-              <div className="text-center">
+          {/* Notifications */}
+          {notifications.length > 0 && (
+            <div className="fixed top-4 right-4 z-50 space-y-2 max-w-sm">
+              {notifications.slice(0, 3).map((notification) => (
+                <ErrorBoundary key={notification.id}>
+                  <NotificationItem notification={notification} />
+                </ErrorBoundary>
+              ))}
+              {notifications.length > 3 && (
+                <div className="text-center">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs"
+                    onClick={() => {
+                      // Clear all notifications after the first 3
+                      notifications.slice(3).forEach(n => removeNotification(n.id));
+                    }}
+                  >
+                    Clear {notifications.length - 3} more
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Confirmation Dialog */}
+          <Dialog open={confirmDialogOpen} onOpenChange={closeConfirmDialog}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{confirmDialogData?.title}</DialogTitle>
+                <DialogDescription>
+                  {confirmDialogData?.message}
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-xs"
+                  variant="outline"
                   onClick={() => {
-                    // Clear all notifications after the first 3
-                    notifications.slice(3).forEach(n => removeNotification(n.id));
+                    confirmDialogData?.onCancel?.();
+                    closeConfirmDialog();
                   }}
                 >
-                  Clear {notifications.length - 3} more
+                  Cancel
                 </Button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Confirmation Dialog */}
-        <Dialog open={confirmDialogOpen} onOpenChange={closeConfirmDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{confirmDialogData?.title}</DialogTitle>
-              <DialogDescription>
-                {confirmDialogData?.message}
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  confirmDialogData?.onCancel?.();
-                  closeConfirmDialog();
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={() => {
-                  confirmDialogData?.onConfirm();
-                  closeConfirmDialog();
-                }}
-              >
-                Confirm
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    confirmDialogData?.onConfirm();
+                    closeConfirmDialog();
+                  }}
+                >
+                  Confirm
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </ErrorBoundary>
     </QueryClientProvider>
   );
 };
