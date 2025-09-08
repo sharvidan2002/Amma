@@ -1,19 +1,12 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-mod commands;
-mod database;
-mod models;
-
-use commands::{employee::*, attendance::*, print::*};
-use database::connection::init_database;
-use tauri::{Manager, State};
-
-// Application state
-#[derive(Debug)]
-pub struct AppState {
-    pub db: mongodb::Database,
-}
+use employee_management_system::{
+    AppState,
+    commands::{employee::*, attendance::*, print::*},
+    database::connection::init_database,
+};
+use tauri::{Manager};
 
 #[tokio::main]
 async fn main() {

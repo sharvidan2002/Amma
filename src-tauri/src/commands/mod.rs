@@ -2,6 +2,21 @@ pub mod employee;
 pub mod attendance;
 pub mod print;
 
-pub use employee::*;
-pub use attendance::*;
-pub use print::*;
+// Use specific exports instead of glob exports to avoid naming conflicts
+pub use employee::{
+    get_employees, get_employee_by_id, create_employee, update_employee,
+    delete_employee, search_employees
+};
+
+pub use attendance::{
+    get_attendance_records, create_attendance_record, update_attendance_record,
+    delete_attendance_record, get_monthly_summary, get_leave_applications,
+    create_leave_application, update_leave_application, approve_leave_application,
+    reject_leave_application
+};
+
+pub use print::{
+    generate_employee_report, generate_bulk_report, generate_attendance_report,
+    export_to_excel, export_to_csv, backup_monthly_data, clear_monthly_data,
+    PrintOptions, ExportOptions, PrintResponse
+};

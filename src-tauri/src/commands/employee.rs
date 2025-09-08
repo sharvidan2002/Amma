@@ -29,7 +29,17 @@ pub async fn get_employees(
             filter_doc.insert("fullName", doc! { "$regex": name, "$options": "i" });
         }
         if let Some(designation) = f.designation {
-            filter_doc.insert("designation", designation);
+            // Convert enum to string for BSON
+            let designation_str = match designation {
+                Designation::DistrictOfficer => "District Officer",
+                Designation::AssistantDistrictOfficer => "Asst.District Officer",
+                Designation::ManagementServiceOfficer => "Management Service Officer",
+                Designation::DevelopmentOfficer => "Development Officer",
+                Designation::ExtensionOfficer => "Extension officer",
+                Designation::OfficeEmployeeService => "Office employee service",
+                Designation::GardenLabour => "Garden labour",
+            };
+            filter_doc.insert("designation", designation_str);
         }
         if let Some(ministry) = f.ministry {
             filter_doc.insert("ministry", doc! { "$regex": ministry, "$options": "i" });
@@ -38,10 +48,26 @@ pub async fn get_employees(
             filter_doc.insert("nicNumber", doc! { "$regex": nic, "$options": "i" });
         }
         if let Some(gender) = f.gender {
-            filter_doc.insert("gender", gender);
+            // Convert enum to string for BSON
+            let gender_str = match gender {
+                Gender::Male => "Male",
+                Gender::Female => "Female",
+            };
+            filter_doc.insert("gender", gender_str);
         }
         if let Some(salary_code) = f.salary_code {
-            filter_doc.insert("salaryCode", salary_code);
+            // Convert enum to string for BSON
+            let salary_code_str = match salary_code {
+                SalaryCode::M1 => "M1",
+                SalaryCode::M2 => "M2",
+                SalaryCode::M3 => "M3",
+                SalaryCode::A1 => "A1",
+                SalaryCode::A2 => "A2",
+                SalaryCode::B3 => "B3",
+                SalaryCode::C3 => "C3",
+                SalaryCode::C4 => "C4",
+            };
+            filter_doc.insert("salaryCode", salary_code_str);
         }
         if let Some(age_range) = f.age_range {
             filter_doc.insert("age", doc! { "$gte": age_range.min, "$lte": age_range.max });
@@ -77,7 +103,7 @@ pub async fn get_employees(
     Ok(EmployeesResponse {
         success: true,
         data: Some(employees),
-        total,
+        total: total as i64,  // Fix: Convert u64 to i64
         page: pagination.page,
         limit: pagination.limit,
         total_pages,
@@ -312,7 +338,7 @@ pub async fn search_employees(
     Ok(EmployeesResponse {
         success: true,
         data: Some(employees),
-        total,
+        total: total as i64,  // Fix: Convert u64 to i64
         page: pagination.page,
         limit: pagination.limit,
         total_pages,

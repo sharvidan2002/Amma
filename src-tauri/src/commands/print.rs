@@ -156,9 +156,9 @@ pub async fn generate_attendance_report(
 /// Export to Excel
 #[tauri::command]
 pub async fn export_to_excel(
-    state: State<'_, AppState>,
-    data: serde_json::Value,
-    options: ExportOptions,
+    _state: State<'_, AppState>,
+    _data: serde_json::Value,
+    _options: ExportOptions,
 ) -> Result<PrintResponse, String> {
     // This would require a Rust Excel library like calamine or xlsxwriter
     // For now, return a placeholder response
@@ -173,7 +173,7 @@ pub async fn export_to_excel(
 /// Export to CSV
 #[tauri::command]
 pub async fn export_to_csv(
-    state: State<'_, AppState>,
+    _state: State<'_, AppState>,
     data: serde_json::Value,
     options: ExportOptions,
 ) -> Result<PrintResponse, String> {

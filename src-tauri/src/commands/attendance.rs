@@ -6,6 +6,7 @@ use mongodb::options::{UpdateOptions};
 use tauri::State;
 use futures::stream::TryStreamExt;
 use std::collections::HashMap;
+use chrono::Datelike; // Add this import for date methods
 
 /// Get attendance records with optional filtering
 #[tauri::command]
@@ -311,7 +312,13 @@ pub async fn get_leave_applications(
     }
 
     if let Some(leave_status) = status {
-        filter_doc.insert("status", leave_status);
+        // Convert enum to string for BSON
+        let status_str = match leave_status {
+            LeaveStatus::Pending => "pending",
+            LeaveStatus::Approved => "approved",
+            LeaveStatus::Rejected => "rejected",
+        };
+        filter_doc.insert("status", status_str);
     }
 
     let mut cursor = collection.find(filter_doc, None)
@@ -371,9 +378,16 @@ pub async fn update_leave_application(
     let filter = id_filter(&id)
         .map_err(|e| format!("Invalid leave application ID: {}", e))?;
 
+    // Convert enum to string for BSON
+    let status_str = match request.status {
+        LeaveStatus::Pending => "pending",
+        LeaveStatus::Approved => "approved",
+        LeaveStatus::Rejected => "rejected",
+    };
+
     let mut update_doc = doc! {
         "$set": {
-            "status": &request.status,
+            "status": status_str,
             "updatedAt": DateTime::now()
         }
     };
