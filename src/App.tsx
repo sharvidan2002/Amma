@@ -30,6 +30,14 @@ const queryClient = new QueryClient({
   },
 });
 
+// Type definition for notifications
+interface Notification {
+  id: string;
+  type: 'success' | 'error' | 'warning' | 'info';
+  title: string;
+  message: string;
+}
+
 // Sample data for demonstration
 const sampleEmployees = [
   {
@@ -155,7 +163,7 @@ const App: React.FC = () => {
   };
 
   // Notification component
-  const NotificationItem = ({ notification }: { notification: any }) => {
+  const NotificationItem = ({ notification }: { notification: Notification }) => {
     const getIcon = () => {
       switch (notification.type) {
         case 'success':

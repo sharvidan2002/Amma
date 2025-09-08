@@ -40,6 +40,9 @@ interface NICValidationData {
   gender?: string;
 }
 
+// Union type for form field values
+type FormFieldValue = string | number | boolean | null | undefined | File;
+
 const AddEmployee: React.FC = () => {
   const { addEmployee } = useEmployeeStore();
   const {
@@ -87,25 +90,30 @@ const AddEmployee: React.FC = () => {
   const [autoFilledFromNIC, setAutoFilledFromNIC] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
 
-  // Handle form field changes with proper typing
-  const handleFieldChange = (field: string, value: any) => {
+  // Type-safe form field change handler
+  const handleFieldChange = (field: string, value: FormFieldValue) => {
     setFormData(prev => {
       const keys = field.split('.');
-      const newData = { ...prev };
 
       if (keys.length === 1) {
-        // Type assertion for top-level properties
-        (newData as Record<string, typeof value>)[field] = value;
-      } else {
-        // Type assertion for nested properties
-        const nestedObj = (newData as Record<string, Record<string, string>>)[keys[0]];
-        (newData as Record<string, Record<string, string>>)[keys[0]] = {
-          ...nestedObj,
-          [keys[1]]: value as string
+        // Handle top-level fields
+        return {
+          ...prev,
+          [field]: value
+        };
+      } else if (keys.length === 2) {
+        // Handle nested object fields (like personalAddress.line1)
+        const [parentKey, childKey] = keys;
+        return {
+          ...prev,
+          [parentKey]: {
+            ...(prev[parentKey as keyof ExtendedEmployeeFormData] as Record<string, unknown>),
+            [childKey]: value
+          }
         };
       }
 
-      return newData;
+      return prev;
     });
 
     setIsDirty(true);
