@@ -15,14 +15,21 @@ async fn main() {
 
     tauri::Builder::default()
         .setup(|app| {
-            // Initialize database connection
-            let rt = tokio::runtime::Handle::current();
-            let db = rt.block_on(async {
-                init_database().await.expect("Failed to initialize database")
-            });
+            let handle = app.handle();
 
-            // Store database in app state
-            app.manage(AppState { db });
+            // Spawn the database initialization in a separate task
+            tauri::async_runtime::spawn(async move {
+                match init_database().await {
+                    Ok(db) => {
+                        handle.manage(AppState { db });
+                        println!("Database initialized successfully");
+                    }
+                    Err(e) => {
+                        eprintln!("Failed to initialize database: {}", e);
+                        std::process::exit(1);
+                    }
+                }
+            });
 
             Ok(())
         })
