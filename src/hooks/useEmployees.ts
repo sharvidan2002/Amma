@@ -3,6 +3,13 @@ import { Employee, EmployeeFilter } from '../types/employee';
 import { ApiResponse, PaginatedResponse } from '../types/common';
 import { invoke } from '@tauri-apps/api/tauri';
 
+// Pagination interface
+interface PaginationOptions {
+  page?: number;
+  limit?: number;
+  offset?: number;
+}
+
 // Query Keys
 export const employeeKeys = {
   all: ['employees'] as const,
@@ -15,7 +22,7 @@ export const employeeKeys = {
 
 // API functions
 export const employeeApi = {
-  getEmployees: async (filters?: EmployeeFilter, pagination?: any): Promise<PaginatedResponse<Employee>> => {
+  getEmployees: async (filters?: EmployeeFilter, pagination?: PaginationOptions): Promise<PaginatedResponse<Employee>> => {
     return await invoke('get_employees', { filter: filters, pagination });
   },
 
@@ -35,13 +42,13 @@ export const employeeApi = {
     return await invoke('delete_employee', { id });
   },
 
-  searchEmployees: async (query: string, pagination?: any): Promise<PaginatedResponse<Employee>> => {
+  searchEmployees: async (query: string, pagination?: PaginationOptions): Promise<PaginatedResponse<Employee>> => {
     return await invoke('search_employees', { query, pagination });
   },
 };
 
 // Hooks
-export const useEmployees = (filters?: EmployeeFilter, pagination?: any) => {
+export const useEmployees = (filters?: EmployeeFilter, pagination?: PaginationOptions) => {
   return useQuery({
     queryKey: employeeKeys.list(filters),
     queryFn: () => employeeApi.getEmployees(filters, pagination),
@@ -58,7 +65,7 @@ export const useEmployee = (id: string) => {
   });
 };
 
-export const useSearchEmployees = (query: string, pagination?: any) => {
+export const useSearchEmployees = (query: string, pagination?: PaginationOptions) => {
   return useQuery({
     queryKey: employeeKeys.search(query),
     queryFn: () => employeeApi.searchEmployees(query, pagination),
@@ -85,7 +92,7 @@ export const useUpdateEmployee = () => {
   return useMutation({
     mutationFn: ({ id, employee }: { id: string; employee: Employee }) =>
       employeeApi.updateEmployee(id, employee),
-    onSuccess: (data, variables) => {
+    onSuccess: (_, variables) => {
       // Invalidate lists and update specific employee cache
       queryClient.invalidateQueries({ queryKey: employeeKeys.lists() });
       queryClient.invalidateQueries({ queryKey: employeeKeys.detail(variables.id) });
@@ -98,7 +105,7 @@ export const useDeleteEmployee = () => {
 
   return useMutation({
     mutationFn: employeeApi.deleteEmployee,
-    onSuccess: (data, id) => {
+    onSuccess: (_, id) => {
       // Remove from cache and invalidate lists
       queryClient.removeQueries({ queryKey: employeeKeys.detail(id) });
       queryClient.invalidateQueries({ queryKey: employeeKeys.lists() });

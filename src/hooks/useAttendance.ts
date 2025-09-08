@@ -10,6 +10,20 @@ import {
 import { ApiResponse } from '../types/common';
 import { invoke } from '@tauri-apps/api/tauri';
 
+// Additional interfaces for type safety
+interface AttendanceRecordData {
+  date: number;
+  status: AttendanceStatus;
+  notes?: string;
+  hours?: number;
+}
+
+interface LeaveApplicationUpdateRequest {
+  status: LeaveStatus;
+  approvedBy?: string;
+  rejectedReason?: string;
+}
+
 // Query Keys
 export const attendanceKeys = {
   all: ['attendance'] as const,
@@ -30,7 +44,7 @@ export const attendanceApi = {
     employeeId: string;
     month: number;
     year: number;
-    records: any[];
+    records: AttendanceRecordData[];
   }): Promise<ApiResponse<AttendanceRecord>> => {
     return await invoke('create_attendance_record', { request });
   },
@@ -60,11 +74,7 @@ export const attendanceApi = {
     return await invoke('create_leave_application', { request: { leaveApplication } });
   },
 
-  updateLeaveApplication: async (id: string, request: {
-    status: LeaveStatus;
-    approvedBy?: string;
-    rejectedReason?: string;
-  }): Promise<ApiResponse<LeaveApplication>> => {
+  updateLeaveApplication: async (id: string, request: LeaveApplicationUpdateRequest): Promise<ApiResponse<LeaveApplication>> => {
     return await invoke('update_leave_application', { id, request });
   },
 
@@ -147,7 +157,7 @@ export const useUpdateLeaveApplication = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, request }: { id: string; request: any }) =>
+    mutationFn: ({ id, request }: { id: string; request: LeaveApplicationUpdateRequest }) =>
       attendanceApi.updateLeaveApplication(id, request),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: attendanceKeys.leaves() });
