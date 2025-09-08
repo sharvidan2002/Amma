@@ -2,7 +2,7 @@ use crate::models::attendance::*;
 use crate::database::{Collections, helpers::*};
 use crate::AppState;
 use mongodb::bson::{doc, oid::ObjectId, DateTime};
-use mongodb::options::{FindOptions, UpdateOptions};
+use mongodb::options::{UpdateOptions};
 use tauri::State;
 use futures::stream::TryStreamExt;
 use std::collections::HashMap;

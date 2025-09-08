@@ -1,11 +1,10 @@
 use crate::models::{employee::Employee, attendance::*};
 use crate::database::{Collections, helpers::*};
 use crate::AppState;
-use mongodb::bson::{doc, DateTime};
+use mongodb::bson::{doc};
 use tauri::State;
 use futures::stream::TryStreamExt;
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
 use std::fs;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -179,7 +178,6 @@ pub async fn export_to_csv(
     options: ExportOptions,
 ) -> Result<PrintResponse, String> {
     use csv::Writer;
-    use std::io::Write;
 
     // Get downloads directory
     let downloads_dir = tauri::api::path::download_dir()

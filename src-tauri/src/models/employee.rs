@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
 use mongodb::bson::{oid::ObjectId, DateTime};
-use std::collections::HashMap;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Employee {
