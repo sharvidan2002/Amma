@@ -83,8 +83,16 @@ const DateInput: React.FC<DateInputProps> = ({
     }
   };
 
+  const handleTodayClick = () => {
+    const today = new Date();
+    handleCalendarSelect(today);
+  };
+
   const isValid = value ? validateDateFormat(value, format) : true;
   const parsedDate = format === 'full' ? parseDate(value) : null;
+
+  // Set initial calendar month to parsed date or current date
+  const initialMonth = parsedDate || new Date();
 
   return (
     <div className={cn("space-y-2", className)}>
@@ -128,13 +136,34 @@ const DateInput: React.FC<DateInputProps> = ({
               <DialogHeader className="p-4 pb-0">
                 <DialogTitle>Select Date</DialogTitle>
               </DialogHeader>
-              <Calendar
-                mode="single"
-                selected={parsedDate || undefined}
-                onSelect={handleCalendarSelect}
-                disabled={disabled}
-                initialFocus
-              />
+              <div className="p-4">
+                <Calendar
+                  mode="single"
+                  selected={parsedDate || undefined}
+                  onSelect={handleCalendarSelect}
+                  defaultMonth={initialMonth}
+                  disabled={disabled}
+                  initialFocus
+                />
+                <div className="flex justify-between items-center mt-4 pt-4 border-t border-pearl-200">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleTodayClick}
+                  >
+                    Today
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsCalendarOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
             </DialogContent>
           </Dialog>
         )}
