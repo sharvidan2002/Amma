@@ -47,7 +47,6 @@ export interface UseImageCropReturn {
 
 export const useImageCrop = (options: UseImageCropOptions = {}): UseImageCropReturn => {
   const {
-    aspectRatio = APP_CONFIG.imageAspectRatio,
     outputWidth = APP_CONFIG.defaultImageWidth,
     outputHeight = APP_CONFIG.defaultImageHeight,
     quality = 0.8,
@@ -128,8 +127,7 @@ export const useImageCrop = (options: UseImageCropOptions = {}): UseImageCropRet
 
   // Load image into canvas
   const loadImageToCanvas = useCallback((
-    imageSrc: string,
-    canvas: HTMLCanvasElement
+    imageSrc: string
   ): Promise<HTMLImageElement> => {
     return new Promise((resolve, reject) => {
       const img = new Image();
@@ -142,11 +140,10 @@ export const useImageCrop = (options: UseImageCropOptions = {}): UseImageCropRet
   // Apply transformations to canvas
   const applyTransformations = useCallback((
     ctx: CanvasRenderingContext2D,
-    img: HTMLImageElement,
-    canvas: HTMLCanvasElement
+    img: HTMLImageElement
   ) => {
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height / 2;
+    const centerX = ctx.canvas.width / 2;
+    const centerY = ctx.canvas.height / 2;
 
     ctx.save();
     ctx.translate(centerX, centerY);
@@ -175,7 +172,7 @@ export const useImageCrop = (options: UseImageCropOptions = {}): UseImageCropRet
       const ctx = canvas.getContext('2d');
       if (!ctx) throw new Error('Could not get canvas context');
 
-      const img = await loadImageToCanvas(originalImage, canvas);
+      const img = await loadImageToCanvas(originalImage);
 
       // Set canvas size to crop dimensions
       canvas.width = outputWidth;
@@ -193,7 +190,7 @@ export const useImageCrop = (options: UseImageCropOptions = {}): UseImageCropRet
       ctx.translate(-cropData.x, -cropData.y);
 
       // Apply transformations
-      applyTransformations(ctx, img, canvas);
+      applyTransformations(ctx, img);
 
       ctx.restore();
 

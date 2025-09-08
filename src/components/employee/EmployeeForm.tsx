@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Save, X, User, MapPin, Phone, IdCard, Briefcase, FileText } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Save, X, User, MapPin, IdCard, Briefcase, FileText } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
@@ -31,10 +31,21 @@ import {
 } from '../../lib/constants';
 import { generateEmployeeNumber, isValidEmail, formatMobileNumber } from '../../lib/utils';
 import { calculateAge, calculateRetirementDate, formatDateForDisplay } from '../../lib/dateUtils';
-import { extractDateOfBirthFromNIC, extractGenderFromNIC, calculateAgeFromNIC } from '../../lib/nicConverter';
 import DateInput from '../common/DateInput';
 import NICInput from '../common/NICInput';
 import ImageCropper from './ImageCropper';
+
+// Extended form data interface to include calculated fields
+interface ExtendedEmployeeFormData extends EmployeeFormData {
+  age?: number;
+  retiredDate?: string;
+}
+
+// Type for NIC validation data
+interface NICValidationData {
+  birthDate?: string;
+  gender?: string;
+}
 
 const EmployeeForm: React.FC = () => {
   const { selectedEmployee, addEmployee, updateEmployee } = useEmployeeStore();
@@ -48,8 +59,8 @@ const EmployeeForm: React.FC = () => {
 
   const isEditing = !!selectedEmployee;
 
-  // Initialize form data
-  const initialFormData: EmployeeFormData = {
+  // Initialize form data using useCallback to satisfy exhaustive-deps
+  const getInitialFormData = useCallback((): ExtendedEmployeeFormData => ({
     employeeNumber: '',
     fullName: '',
     designation: 'District Officer',
@@ -79,9 +90,9 @@ const EmployeeForm: React.FC = () => {
     secondLanguagePassed: false,
     maritalStatus: 'Single',
     salaryCode: 'M1'
-  };
+  }), []);
 
-  const [formData, setFormData] = useState<EmployeeFormData>(initialFormData);
+  const [formData, setFormData] = useState<ExtendedEmployeeFormData>(getInitialFormData());
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [autoFilledFromNIC, setAutoFilledFromNIC] = useState(false);
 
@@ -94,29 +105,32 @@ const EmployeeForm: React.FC = () => {
       });
     } else {
       setFormData({
-        ...initialFormData,
+        ...getInitialFormData(),
         employeeNumber: generateEmployeeNumber()
       });
     }
     setErrors({});
     setAutoFilledFromNIC(false);
-  }, [selectedEmployee, isEditing, employeeFormDialogOpen]);
+  }, [selectedEmployee, isEditing, employeeFormDialogOpen, getInitialFormData]);
 
-  // Handle form field changes
-  const handleFieldChange = (field: string, value: any) => {
+  // Handle form field changes with proper typing
+  const handleFieldChange = (field: string, value: unknown) => {
     setFormData(prev => {
       const keys = field.split('.');
+      const newData = { ...prev };
+
       if (keys.length === 1) {
-        return { ...prev, [field]: value };
+        (newData as Record<string, unknown>)[field] = value;
       } else {
-        return {
-          ...prev,
-          [keys[0]]: {
-            ...prev[keys[0] as keyof EmployeeFormData],
-            [keys[1]]: value
-          }
+        const [parentKey, childKey] = keys;
+        const parentObj = (newData as Record<string, unknown>)[parentKey];
+        (newData as Record<string, unknown>)[parentKey] = {
+          ...(typeof parentObj === 'object' && parentObj ? parentObj as Record<string, unknown> : {}),
+          [childKey]: value
         };
       }
+
+      return newData as ExtendedEmployeeFormData;
     });
 
     // Clear error when field is updated
@@ -125,8 +139,8 @@ const EmployeeForm: React.FC = () => {
     }
   };
 
-  // Handle NIC validation and auto-fill
-  const handleNICValidation = (isValid: boolean, extractedData?: any) => {
+  // Handle NIC validation and auto-fill with proper typing
+  const handleNICValidation = (isValid: boolean, extractedData?: NICValidationData) => {
     if (isValid && extractedData && !autoFilledFromNIC) {
       if (extractedData.birthDate) {
         handleFieldChange('dateOfBirth', extractedData.birthDate);
@@ -252,7 +266,8 @@ const EmployeeForm: React.FC = () => {
       }
 
       closeEmployeeFormDialog();
-    } catch (error) {
+    } catch (err) {
+      console.error('Failed to save employee:', err);
       addNotification({
         type: 'error',
         title: 'Save Error',
@@ -306,7 +321,6 @@ const EmployeeForm: React.FC = () => {
                     value={formData.employeeNumber}
                     onChange={(e) => handleFieldChange('employeeNumber', e.target.value.toUpperCase())}
                     placeholder="EMP001"
-                    error={errors.employeeNumber}
                   />
                   {errors.employeeNumber && (
                     <p className="text-sm text-red-600 mt-1">{errors.employeeNumber}</p>
@@ -320,7 +334,6 @@ const EmployeeForm: React.FC = () => {
                     value={formData.fullName}
                     onChange={(e) => handleFieldChange('fullName', e.target.value)}
                     placeholder="John Doe"
-                    error={errors.fullName}
                   />
                   {errors.fullName && (
                     <p className="text-sm text-red-600 mt-1">{errors.fullName}</p>
@@ -397,8 +410,8 @@ const EmployeeForm: React.FC = () => {
 
               {/* Employee Photo */}
               <ImageCropper
-                value={formData.image}
-                onChange={(image) => handleFieldChange('image', image)}
+                value={formData.image ?? ''}
+                onChange={(image) => handleFieldChange('image', image ?? '')}
                 label="Employee Photo"
               />
             </FormSection>
@@ -435,7 +448,6 @@ const EmployeeForm: React.FC = () => {
                     onChange={(e) => handleMobileNumberChange(e.target.value)}
                     placeholder="012 345 6789"
                     maxLength={12}
-                    error={errors.mobileNumber}
                   />
                   {errors.mobileNumber && (
                     <p className="text-sm text-red-600 mt-1">{errors.mobileNumber}</p>
@@ -450,7 +462,6 @@ const EmployeeForm: React.FC = () => {
                     value={formData.emailAddress}
                     onChange={(e) => handleFieldChange('emailAddress', e.target.value)}
                     placeholder="john.doe@example.com"
-                    error={errors.emailAddress}
                   />
                   {errors.emailAddress && (
                     <p className="text-sm text-red-600 mt-1">{errors.emailAddress}</p>
@@ -479,7 +490,7 @@ const EmployeeForm: React.FC = () => {
                   error={errors.dateOfBirth}
                 />
 
-                {formData.age > 0 && (
+                {formData.age && formData.age > 0 && (
                   <div>
                     <Label>Age</Label>
                     <Input

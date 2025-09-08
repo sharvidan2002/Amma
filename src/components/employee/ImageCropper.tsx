@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { Upload, Crop, RotateCcw, Check, X, Camera } from 'lucide-react';
+import { Crop, RotateCcw, Check, X, Camera } from 'lucide-react';
 import Cropper from 'react-cropper';
 import 'cropperjs/dist/cropper.css';
 import { Button } from '../ui/button';
@@ -14,6 +14,24 @@ import {
 import { fileToBase64, formatFileSize } from '../../lib/utils';
 import { APP_CONFIG } from '../../lib/constants';
 import { cn } from '../../lib/utils';
+
+// Type for the cropper instance
+interface CropperInstance {
+  getCroppedCanvas: (options?: {
+    width?: number;
+    height?: number;
+    fillColor?: string;
+    imageSmoothingEnabled?: boolean;
+    imageSmoothingQuality?: string;
+  }) => HTMLCanvasElement;
+  rotate: (degree: number) => void;
+  reset: () => void;
+}
+
+// Type for the cropper ref element
+interface CropperElement extends HTMLImageElement {
+  cropper: CropperInstance;
+}
 
 interface ImageCropperProps {
   value?: string; // Base64 image string
@@ -97,9 +115,9 @@ const ImageCropper: React.FC<ImageCropperProps> = ({
   };
 
   const getCropData = () => {
-    const cropper = (cropperRef.current as any)?.cropper;
-    if (cropper) {
-      const croppedCanvas = cropper.getCroppedCanvas({
+    const cropperElement = cropperRef.current as CropperElement | null;
+    if (cropperElement?.cropper) {
+      const croppedCanvas = cropperElement.cropper.getCroppedCanvas({
         width: APP_CONFIG.defaultImageWidth,
         height: APP_CONFIG.defaultImageHeight,
         fillColor: '#fff',
@@ -121,16 +139,16 @@ const ImageCropper: React.FC<ImageCropperProps> = ({
   };
 
   const handleRotate = () => {
-    const cropper = (cropperRef.current as any)?.cropper;
-    if (cropper) {
-      cropper.rotate(90);
+    const cropperElement = cropperRef.current as CropperElement | null;
+    if (cropperElement?.cropper) {
+      cropperElement.cropper.rotate(90);
     }
   };
 
   const resetCrop = () => {
-    const cropper = (cropperRef.current as any)?.cropper;
-    if (cropper) {
-      cropper.reset();
+    const cropperElement = cropperRef.current as CropperElement | null;
+    if (cropperElement?.cropper) {
+      cropperElement.cropper.reset();
     }
   };
 

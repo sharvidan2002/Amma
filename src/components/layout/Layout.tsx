@@ -9,7 +9,7 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
-  const { sidebarCollapsed, pageLoading } = useUIStore();
+  const { pageLoading } = useUIStore();
 
   return (
     <div className="h-screen flex bg-pearl-50">

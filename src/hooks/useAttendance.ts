@@ -5,7 +5,6 @@ import {
   MonthlyAttendanceSummary,
   AttendanceFilter,
   AttendanceStatus,
-  LeaveType,
   LeaveStatus
 } from '../types/attendance';
 import { ApiResponse } from '../types/common';
