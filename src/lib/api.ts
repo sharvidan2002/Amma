@@ -3,6 +3,38 @@ import { Employee, EmployeeFilter } from '../types/employee';
 import { AttendanceRecord, LeaveApplication, AttendanceFilter } from '../types/attendance';
 import { ApiResponse, PaginatedResponse, PrintOptions, ExportOptions } from '../types/common';
 
+// Additional types for better type safety
+interface PaginationOptions {
+  page?: number;
+  limit?: number;
+  offset?: number;
+}
+
+interface AttendanceRecordData {
+  date: number;
+  status: string;
+  notes?: string;
+  hours?: number;
+}
+
+interface MonthlySummary {
+  month: number;
+  year: number;
+  totalEmployees: number;
+  presentDays: number;
+  absentDays: number;
+  leaveDays: number;
+  workingDays: number;
+  attendanceRate: number;
+}
+
+interface AppInfo {
+  version: string;
+  name: string;
+  author: string;
+  description: string;
+}
+
 /**
  * API client for Tauri backend commands
  * This module provides a centralized interface for all backend operations
@@ -15,7 +47,7 @@ export const employeeApi = {
    */
   async getEmployees(
     filter?: EmployeeFilter,
-    pagination?: any
+    pagination?: PaginationOptions
   ): Promise<PaginatedResponse<Employee>> {
     try {
       const response = await invoke('get_employees', { filter, pagination });
@@ -88,7 +120,7 @@ export const employeeApi = {
    */
   async searchEmployees(
     query: string,
-    pagination?: any
+    pagination?: PaginationOptions
   ): Promise<PaginatedResponse<Employee>> {
     try {
       const response = await invoke('search_employees', { query, pagination });
@@ -122,7 +154,7 @@ export const attendanceApi = {
     employeeId: string;
     month: number;
     year: number;
-    records: any[];
+    records: AttendanceRecordData[];
   }): Promise<ApiResponse<AttendanceRecord>> {
     try {
       const response = await invoke('create_attendance_record', { request });
@@ -167,10 +199,10 @@ export const attendanceApi = {
   /**
    * Get monthly summary
    */
-  async getMonthlySummary(month: number, year: number): Promise<any> {
+  async getMonthlySummary(month: number, year: number): Promise<MonthlySummary> {
     try {
       const response = await invoke('get_monthly_summary', { month, year });
-      return response;
+      return response as MonthlySummary;
     } catch (error) {
       console.error('Failed to get monthly summary:', error);
       throw new Error(`Failed to fetch monthly summary: ${error}`);
@@ -318,7 +350,7 @@ export const printApi = {
    * Export to Excel
    */
   async exportToExcel(
-    data: any,
+    data: unknown,
     options: ExportOptions
   ): Promise<ApiResponse<string>> {
     try {
@@ -334,7 +366,7 @@ export const printApi = {
    * Export to CSV
    */
   async exportToCSV(
-    data: any,
+    data: unknown,
     options: ExportOptions
   ): Promise<ApiResponse<string>> {
     try {
@@ -384,10 +416,10 @@ export const systemApi = {
   /**
    * Get application info
    */
-  async getAppInfo(): Promise<any> {
+  async getAppInfo(): Promise<AppInfo> {
     try {
       const response = await invoke('get_app_info');
-      return response;
+      return response as AppInfo;
     } catch (error) {
       console.error('Failed to get app info:', error);
       throw new Error(`Failed to get app info: ${error}`);
@@ -400,15 +432,15 @@ export const apiUtils = {
   /**
    * Handle API errors consistently
    */
-  handleApiError(error: any, operation: string): Error {
+  handleApiError(error: unknown, operation: string): Error {
     console.error(`API Error in ${operation}:`, error);
 
     if (typeof error === 'string') {
       return new Error(error);
     }
 
-    if (error?.message) {
-      return new Error(error.message);
+    if (error && typeof error === 'object' && 'message' in error) {
+      return new Error((error as { message: string }).message);
     }
 
     return new Error(`Failed to ${operation}`);

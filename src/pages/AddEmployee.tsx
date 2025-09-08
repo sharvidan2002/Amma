@@ -28,6 +28,18 @@ import DateInput from '../components/common/DateInput';
 import NICInput from '../components/common/NICInput';
 import ImageCropper from '../components/employee/ImageCropper';
 
+// Extended form data interface to include calculated fields
+interface ExtendedEmployeeFormData extends EmployeeFormData {
+  age?: number;
+  retiredDate?: string;
+}
+
+// Type for NIC validation data
+interface NICValidationData {
+  birthDate?: string;
+  gender?: string;
+}
+
 const AddEmployee: React.FC = () => {
   const { addEmployee } = useEmployeeStore();
   const {
@@ -38,7 +50,7 @@ const AddEmployee: React.FC = () => {
   } = useUIStore();
 
   // Initialize form data
-  const initialFormData: EmployeeFormData = {
+  const initialFormData: ExtendedEmployeeFormData = {
     employeeNumber: generateEmployeeNumber(),
     fullName: '',
     designation: 'District Officer',
@@ -70,23 +82,26 @@ const AddEmployee: React.FC = () => {
     salaryCode: 'M1'
   };
 
-  const [formData, setFormData] = useState<EmployeeFormData>(initialFormData);
+  const [formData, setFormData] = useState<ExtendedEmployeeFormData>(initialFormData);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [autoFilledFromNIC, setAutoFilledFromNIC] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
 
-  // Handle form field changes
+  // Handle form field changes with proper typing
   const handleFieldChange = (field: string, value: any) => {
     setFormData(prev => {
       const keys = field.split('.');
       const newData = { ...prev };
 
       if (keys.length === 1) {
-        (newData as any)[field] = value;
+        // Type assertion for top-level properties
+        (newData as Record<string, typeof value>)[field] = value;
       } else {
-        (newData as any)[keys[0]] = {
-          ...(newData as any)[keys[0]],
-          [keys[1]]: value
+        // Type assertion for nested properties
+        const nestedObj = (newData as Record<string, Record<string, string>>)[keys[0]];
+        (newData as Record<string, Record<string, string>>)[keys[0]] = {
+          ...nestedObj,
+          [keys[1]]: value as string
         };
       }
 
@@ -101,8 +116,8 @@ const AddEmployee: React.FC = () => {
     }
   };
 
-  // Handle NIC validation and auto-fill
-  const handleNICValidation = (isValid: boolean, extractedData?: any) => {
+  // Handle NIC validation and auto-fill with proper typing
+  const handleNICValidation = (isValid: boolean, extractedData?: NICValidationData) => {
     if (isValid && extractedData && !autoFilledFromNIC) {
       if (extractedData.birthDate) {
         handleFieldChange('dateOfBirth', extractedData.birthDate);
@@ -229,7 +244,8 @@ const AddEmployee: React.FC = () => {
       setIsDirty(false);
       setAutoFilledFromNIC(false);
 
-    } catch (error) {
+    } catch (err) {
+      console.error('Failed to save employee:', err);
       addNotification({
         type: 'error',
         title: 'Save Error',
@@ -399,8 +415,8 @@ const AddEmployee: React.FC = () => {
 
             {/* Employee Photo */}
             <ImageCropper
-              value={formData.image}
-              onChange={(image) => handleFieldChange('image', image)}
+              value={formData.image ?? ''}
+              onChange={(image) => handleFieldChange('image', image ?? '')}
               label="Employee Photo"
             />
           </FormSection>
@@ -479,7 +495,7 @@ const AddEmployee: React.FC = () => {
                 error={errors.dateOfBirth}
               />
 
-              {formData.age > 0 && (
+              {formData.age && formData.age > 0 && (
                 <div>
                   <Label>Age</Label>
                   <Input

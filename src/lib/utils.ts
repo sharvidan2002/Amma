@@ -60,7 +60,7 @@ export function formatFileSize(bytes: number): string {
 }
 
 // Debounce function
-export function debounce<T extends (...args: any[]) => any>(
+export function debounce<T extends (...args: unknown[]) => unknown>(
   func: T,
   wait: number
 ): (...args: Parameters<T>) => void {
@@ -87,10 +87,10 @@ export function deepClone<T>(obj: T): T {
   }
 
   if (typeof obj === 'object') {
-    const clonedObj = {} as { [key: string]: any };
+    const clonedObj = {} as Record<string, unknown>;
     for (const key in obj) {
-      if (obj.hasOwnProperty(key)) {
-        clonedObj[key] = deepClone(obj[key]);
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        clonedObj[key] = deepClone((obj as Record<string, unknown>)[key]);
       }
     }
     return clonedObj as T;
@@ -200,7 +200,7 @@ export function removeDuplicates<T>(array: T[], key?: keyof T): T[] {
 }
 
 // Check if object is empty
-export function isEmpty(obj: any): boolean {
+export function isEmpty(obj: unknown): boolean {
   if (obj == null) return true;
   if (Array.isArray(obj)) return obj.length === 0;
   if (typeof obj === 'object') return Object.keys(obj).length === 0;

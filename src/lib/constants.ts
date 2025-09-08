@@ -1,4 +1,23 @@
-import { Designation, SalaryCode, AttendanceStatus, LeaveType } from '../types/employee';
+import { Designation, SalaryCode } from '../types/employee';
+
+// Re-export types from employee module to fix missing exports
+export type AttendanceStatus =
+  | 'present'
+  | 'absent'
+  | 'half-day'
+  | 'leave'
+  | 'sick-leave'
+  | 'casual-leave'
+  | 'annual-leave'
+  | 'emergency-leave';
+
+export type LeaveType =
+  | 'sick-leave'
+  | 'casual-leave'
+  | 'annual-leave'
+  | 'emergency-leave'
+  | 'maternity-leave'
+  | 'paternity-leave';
 
 // Employee Constants
 export const DESIGNATIONS: Designation[] = [

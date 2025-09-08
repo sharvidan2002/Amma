@@ -1,4 +1,4 @@
-import { format, parse, isValid, addYears, differenceInYears } from 'date-fns';
+import { format, isValid, addYears, differenceInYears } from 'date-fns';
 
 /**
  * Date utility functions for the employee management system
@@ -21,7 +21,7 @@ export function parseDate(dateString: string): Date | null {
   if (!dateString) return null;
 
   // Handle dd-MM-yyyy format
-  const fullDateMatch = dateString.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  const fullDateMatch = dateString.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
   if (fullDateMatch) {
     const [, day, month, year] = fullDateMatch;
     const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
@@ -29,7 +29,7 @@ export function parseDate(dateString: string): Date | null {
   }
 
   // Handle dd-MM format (current year)
-  const monthDayMatch = dateString.match(/^(\d{1,2})[\/\-](\d{1,2})$/);
+  const monthDayMatch = dateString.match(/^(\d{1,2})[/-](\d{1,2})$/);
   if (monthDayMatch) {
     const [, day, month] = monthDayMatch;
     const currentYear = new Date().getFullYear();
@@ -42,7 +42,7 @@ export function parseDate(dateString: string): Date | null {
 
 export function formatDateInput(value: string): string {
   // Remove any non-numeric characters except existing dashes
-  let cleaned = value.replace(/[^\d\-]/g, '');
+  let cleaned = value.replace(/[^\d-]/g, '');
 
   // Handle auto-dash insertion for dd-MM-yyyy format
   if (cleaned.length >= 2 && !cleaned.includes('-')) {
@@ -66,7 +66,7 @@ export function formatDateInput(value: string): string {
 
 export function formatIncrementDate(value: string): string {
   // For increment date format: dd-MM
-  let cleaned = value.replace(/[^\d\-]/g, '');
+  let cleaned = value.replace(/[^\d-]/g, '');
 
   if (cleaned.length >= 2 && !cleaned.includes('-')) {
     cleaned = cleaned.substring(0, 2) + '-' + cleaned.substring(2);
