@@ -5,8 +5,7 @@ use mongodb::bson::{doc, oid::ObjectId, DateTime};
 use mongodb::options::{UpdateOptions};
 use tauri::State;
 use futures::stream::TryStreamExt;
-use std::collections::HashMap;
-use chrono::Datelike; // Add this import for date methods
+use chrono::Datelike;
 
 /// Get attendance records with optional filtering
 #[tauri::command]
@@ -81,7 +80,6 @@ pub async fn create_attendance_record(
         month: request.month,
         year: request.year,
         records: request.records,
-        leave_balance: 42, // Default annual leave
         created_at: Some(DateTime::now()),
         updated_at: Some(DateTime::now()),
     };
@@ -236,31 +234,12 @@ pub async fn get_monthly_summary(
             let mut total_present = 0;
             let mut total_absent = 0;
             let mut total_half_days = 0;
-            let mut total_leaves = 0;
-            let mut leave_breakdown = HashMap::new();
 
             for daily in &record.records {
                 match daily.status {
                     AttendanceStatus::Present => total_present += 1,
                     AttendanceStatus::Absent => total_absent += 1,
                     AttendanceStatus::HalfDay => total_half_days += 1,
-                    AttendanceStatus::Leave => total_leaves += 1,
-                    AttendanceStatus::SickLeave => {
-                        total_leaves += 1;
-                        *leave_breakdown.entry("sick-leave".to_string()).or_insert(0) += 1;
-                    },
-                    AttendanceStatus::CasualLeave => {
-                        total_leaves += 1;
-                        *leave_breakdown.entry("casual-leave".to_string()).or_insert(0) += 1;
-                    },
-                    AttendanceStatus::AnnualLeave => {
-                        total_leaves += 1;
-                        *leave_breakdown.entry("annual-leave".to_string()).or_insert(0) += 1;
-                    },
-                    AttendanceStatus::EmergencyLeave => {
-                        total_leaves += 1;
-                        *leave_breakdown.entry("emergency-leave".to_string()).or_insert(0) += 1;
-                    },
                 }
             }
 
@@ -280,8 +259,6 @@ pub async fn get_monthly_summary(
                 total_present,
                 total_absent,
                 total_half_days,
-                total_leaves,
-                leave_breakdown,
                 attendance_percentage,
             });
         }
@@ -295,171 +272,76 @@ pub async fn get_monthly_summary(
     })
 }
 
-/// Get leave applications
+/// Backup monthly data
 #[tauri::command]
-pub async fn get_leave_applications(
+pub async fn backup_monthly_data(
     state: State<'_, AppState>,
-    employee_id: Option<String>,
-    status: Option<LeaveStatus>,
-) -> Result<Vec<LeaveApplication>, String> {
+    month: i32,
+    year: i32,
+) -> Result<crate::commands::print::PrintResponse, String> {
     let db = &state.db;
-    let collection = db.collection::<LeaveApplication>(Collections::LEAVES);
+    let attendance_collection = db.collection::<AttendanceRecord>(Collections::ATTENDANCE);
 
-    let mut filter_doc = doc! {};
+    // Create backup directory
+    let downloads_dir = tauri::api::path::download_dir()
+        .ok_or_else(|| "Failed to get downloads directory".to_string())?;
 
-    if let Some(emp_id) = employee_id {
-        filter_doc.insert("employeeId", emp_id);
-    }
+    let backup_dir = downloads_dir.join(format!("backup_{}_{}", year, month));
+    std::fs::create_dir_all(&backup_dir)
+        .map_err(|e| format!("Failed to create backup directory: {}", e))?;
 
-    if let Some(leave_status) = status {
-        // Convert enum to string for BSON
-        let status_str = match leave_status {
-            LeaveStatus::Pending => "pending",
-            LeaveStatus::Approved => "approved",
-            LeaveStatus::Rejected => "rejected",
-        };
-        filter_doc.insert("status", status_str);
-    }
-
-    let mut cursor = collection.find(filter_doc, None)
+    // Backup attendance records
+    let attendance_filter = doc! { "month": month, "year": year };
+    let mut attendance_cursor = attendance_collection.find(attendance_filter, None)
         .await
-        .map_err(|e| format!("Failed to find leave applications: {}", e))?;
+        .map_err(|e| format!("Failed to find attendance records: {}", e))?;
 
-    let mut applications = Vec::new();
-    while let Some(application) = cursor.try_next()
+    let mut attendance_records = Vec::new();
+    while let Some(record) = attendance_cursor.try_next()
         .await
-        .map_err(|e| format!("Failed to iterate leave applications: {}", e))? {
-        applications.push(application);
+        .map_err(|e| format!("Failed to iterate attendance records: {}", e))? {
+        attendance_records.push(record);
     }
 
-    Ok(applications)
+    let attendance_file = backup_dir.join("attendance.json");
+    let attendance_json = serde_json::to_string_pretty(&attendance_records)
+        .map_err(|e| format!("Failed to serialize attendance data: {}", e))?;
+    std::fs::write(&attendance_file, attendance_json)
+        .map_err(|e| format!("Failed to write attendance backup: {}", e))?;
+
+    Ok(crate::commands::print::PrintResponse {
+        success: true,
+        file_path: Some(backup_dir.to_string_lossy().to_string()),
+        message: Some("Monthly data backed up successfully".to_string()),
+        error: None,
+    })
 }
 
-/// Create leave application
+/// Clear monthly data
 #[tauri::command]
-pub async fn create_leave_application(
+pub async fn clear_monthly_data(
     state: State<'_, AppState>,
-    request: CreateLeaveRequest,
-) -> Result<LeaveResponse, String> {
+    month: i32,
+    year: i32,
+) -> Result<crate::commands::print::PrintResponse, String> {
     let db = &state.db;
-    let collection = db.collection::<LeaveApplication>(Collections::LEAVES);
+    let attendance_collection = db.collection::<AttendanceRecord>(Collections::ATTENDANCE);
 
-    let mut application = request.leave_application;
-    application.id = Some(ObjectId::new());
-    application.created_at = Some(DateTime::now());
-    application.updated_at = Some(DateTime::now());
+    // Delete attendance records
+    let attendance_filter = doc! { "month": month, "year": year };
+    let attendance_result = attendance_collection.delete_many(attendance_filter, None)
+        .await
+        .map_err(|e| format!("Failed to delete attendance records: {}", e))?;
 
-    match collection.insert_one(&application, None).await {
-        Ok(_) => Ok(LeaveResponse {
-            success: true,
-            data: Some(application),
-            message: Some("Leave application created successfully".to_string()),
-            error: None,
-        }),
-        Err(e) => Ok(LeaveResponse {
-            success: false,
-            data: None,
-            message: None,
-            error: Some(format!("Failed to create leave application: {}", e)),
-        }),
-    }
-}
-
-/// Update leave application
-#[tauri::command]
-pub async fn update_leave_application(
-    state: State<'_, AppState>,
-    id: String,
-    request: UpdateLeaveRequest,
-) -> Result<LeaveResponse, String> {
-    let db = &state.db;
-    let collection = db.collection::<LeaveApplication>(Collections::LEAVES);
-
-    let filter = id_filter(&id)
-        .map_err(|e| format!("Invalid leave application ID: {}", e))?;
-
-    // Convert enum to string for BSON
-    let status_str = match request.status {
-        LeaveStatus::Pending => "pending",
-        LeaveStatus::Approved => "approved",
-        LeaveStatus::Rejected => "rejected",
-    };
-
-    let mut update_doc = doc! {
-        "$set": {
-            "status": status_str,
-            "updatedAt": DateTime::now()
-        }
-    };
-
-    if let Some(approved_by) = request.approved_by {
-        update_doc.get_document_mut("$set").unwrap().insert("approvedBy", approved_by);
-        update_doc.get_document_mut("$set").unwrap().insert("approvedDate", chrono::Utc::now().format("%d-%m-%Y").to_string());
-    }
-
-    if let Some(rejected_reason) = request.rejected_reason {
-        update_doc.get_document_mut("$set").unwrap().insert("rejectedReason", rejected_reason);
-    }
-
-    match collection.update_one(filter, update_doc, None).await {
-        Ok(result) => {
-            if result.matched_count == 0 {
-                Ok(LeaveResponse {
-                    success: false,
-                    data: None,
-                    message: Some("Leave application not found".to_string()),
-                    error: None,
-                })
-            } else {
-                Ok(LeaveResponse {
-                    success: true,
-                    data: None,
-                    message: Some("Leave application updated successfully".to_string()),
-                    error: None,
-                })
-            }
-        },
-        Err(e) => Ok(LeaveResponse {
-            success: false,
-            data: None,
-            message: None,
-            error: Some(format!("Failed to update leave application: {}", e)),
-        }),
-    }
-}
-
-/// Approve leave application
-#[tauri::command]
-pub async fn approve_leave_application(
-    state: State<'_, AppState>,
-    id: String,
-    approved_by: String,
-) -> Result<LeaveResponse, String> {
-    update_leave_application(
-        state,
-        id,
-        UpdateLeaveRequest {
-            status: LeaveStatus::Approved,
-            approved_by: Some(approved_by),
-            rejected_reason: None,
-        }
-    ).await
-}
-
-/// Reject leave application
-#[tauri::command]
-pub async fn reject_leave_application(
-    state: State<'_, AppState>,
-    id: String,
-    reason: String,
-) -> Result<LeaveResponse, String> {
-    update_leave_application(
-        state,
-        id,
-        UpdateLeaveRequest {
-            status: LeaveStatus::Rejected,
-            approved_by: None,
-            rejected_reason: Some(reason),
-        }
-    ).await
+    Ok(crate::commands::print::PrintResponse {
+        success: true,
+        file_path: None,
+        message: Some(format!(
+            "Cleared {} attendance records for {}/{}",
+            attendance_result.deleted_count,
+            month,
+            year
+        )),
+        error: None,
+    })
 }

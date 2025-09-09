@@ -47,12 +47,6 @@ async fn main() {
             update_attendance_record,
             delete_attendance_record,
             get_monthly_summary,
-            // Leave commands
-            get_leave_applications,
-            create_leave_application,
-            update_leave_application,
-            approve_leave_application,
-            reject_leave_application,
             // Print commands
             generate_employee_report,
             generate_bulk_report,

@@ -11,12 +11,11 @@ import { DESIGNATIONS } from '../lib/constants';
 
 const Dashboard: React.FC = () => {
   const { employees } = useEmployeeStore();
-  const { getAllMonthlySummaries, shouldShowMonthlyAlert, getPendingLeaveApplications } = useAttendanceStore();
+  const { getAllMonthlySummaries, shouldShowMonthlyAlert } = useAttendanceStore();
   const { openEmployeeFormDialog, setCurrentPage } = useUIStore();
 
   const { month, year } = getCurrentMonthYear();
   const monthlySummaries = getAllMonthlySummaries(month, year);
-  const pendingLeaves = getPendingLeaveApplications();
   const showAlert = shouldShowMonthlyAlert();
 
   // Calculate statistics
@@ -34,9 +33,9 @@ const Dashboard: React.FC = () => {
   const currentMonthAttendance = monthlySummaries.reduce((acc, summary) => {
     acc.totalPresent += summary.totalPresent;
     acc.totalAbsent += summary.totalAbsent;
-    acc.totalLeaves += summary.totalLeaves;
+    acc.totalHalfDays += summary.totalHalfDays;
     return acc;
-  }, { totalPresent: 0, totalAbsent: 0, totalLeaves: 0 });
+  }, { totalPresent: 0, totalAbsent: 0, totalHalfDays: 0 });
 
   const attendanceRate = monthlySummaries.length > 0
     ? Math.round(monthlySummaries.reduce((acc, summary) => acc + summary.attendancePercentage, 0) / monthlySummaries.length)
@@ -108,7 +107,7 @@ const Dashboard: React.FC = () => {
               <div className="flex-1">
                 <h3 className="font-medium text-yellow-800">Monthly Backup Reminder</h3>
                 <p className="text-sm text-yellow-700">
-                  It's time to backup attendance and leave data for {getMonthName(month)} {year}.
+                  It's time to backup attendance data for {getMonthName(month)} {year}.
                 </p>
               </div>
               <Button variant="outline" size="sm" className="border-yellow-300 text-yellow-700 hover:bg-yellow-100">
@@ -148,6 +147,7 @@ const Dashboard: React.FC = () => {
         />
       </div>
 
+      {/* Rest of the dashboard content remains the same, just remove any leave-related sections */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Designation Breakdown */}
         <Card>
@@ -246,10 +246,10 @@ const Dashboard: React.FC = () => {
                     <div className="text-xs text-slate-custom-500">Absent</div>
                   </div>
                   <div>
-                    <div className="text-lg font-semibold text-blue-600">
-                      {currentMonthAttendance.totalLeaves}
+                    <div className="text-lg font-semibold text-yellow-600">
+                      {currentMonthAttendance.totalHalfDays}
                     </div>
-                    <div className="text-xs text-slate-custom-500">Leaves</div>
+                    <div className="text-xs text-slate-custom-500">Half Days</div>
                   </div>
                 </div>
 
@@ -275,69 +275,6 @@ const Dashboard: React.FC = () => {
           </CardContent>
         </Card>
       </div>
-
-      {/* Pending Leave Applications */}
-      {pendingLeaves.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>Pending Leave Applications</span>
-              <span className="text-sm bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">
-                {pendingLeaves.length}
-              </span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {pendingLeaves.slice(0, 5).map((leave) => {
-                const employee = employees.find(emp => emp._id === leave.employeeId);
-                return (
-                  <div key={leave._id} className="flex items-center justify-between p-3 bg-pearl-50 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      {employee?.image ? (
-                        <img
-                          src={employee.image}
-                          alt={employee.fullName}
-                          className="w-8 h-8 rounded-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-8 h-8 rounded-full bg-pearl-200 flex items-center justify-center">
-                          <span className="text-xs text-slate-custom-500">
-                            {employee?.fullName.charAt(0).toUpperCase()}
-                          </span>
-                        </div>
-                      )}
-                      <div>
-                        <p className="text-sm font-medium text-slate-custom-800">
-                          {employee ? formatName(employee.fullName) : 'Unknown Employee'}
-                        </p>
-                        <p className="text-xs text-slate-custom-500">
-                          {leave.leaveType} • {leave.startDate} to {leave.endDate}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                        {leave.totalDays} day{leave.totalDays !== 1 ? 's' : ''}
-                      </span>
-                      <Button size="sm" variant="outline">
-                        Review
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-              {pendingLeaves.length > 5 && (
-                <div className="text-center pt-2">
-                  <Button variant="ghost" size="sm">
-                    View All ({pendingLeaves.length - 5} more)
-                  </Button>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Quick Actions */}
       <Card>

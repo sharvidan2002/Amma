@@ -4,20 +4,7 @@ import { Designation, SalaryCode } from '../types/employee';
 export type AttendanceStatus =
   | 'present'
   | 'absent'
-  | 'half-day'
-  | 'leave'
-  | 'sick-leave'
-  | 'casual-leave'
-  | 'annual-leave'
-  | 'emergency-leave';
-
-export type LeaveType =
-  | 'sick-leave'
-  | 'casual-leave'
-  | 'annual-leave'
-  | 'emergency-leave'
-  | 'maternity-leave'
-  | 'paternity-leave';
+  | 'half-day';
 
 // Employee Constants
 export const DESIGNATIONS: Designation[] = [
@@ -45,32 +32,10 @@ export const MARITAL_STATUS = [
 
 export const CENTRAL_PROVINCIAL = ['Central', 'Provincial'] as const;
 
-// Attendance Constants
-export const ATTENDANCE_STATUSES: { value: AttendanceStatus; label: string; color: string }[] = [
-  { value: 'present', label: 'Present', color: 'bg-green-500' },
-  { value: 'absent', label: 'Absent', color: 'bg-red-500' },
-  { value: 'half-day', label: 'Half Day', color: 'bg-yellow-500' },
-  { value: 'leave', label: 'Leave', color: 'bg-blue-500' },
-  { value: 'sick-leave', label: 'Sick Leave', color: 'bg-purple-500' },
-  { value: 'casual-leave', label: 'Casual Leave', color: 'bg-indigo-500' },
-  { value: 'annual-leave', label: 'Annual Leave', color: 'bg-cyan-500' },
-  { value: 'emergency-leave', label: 'Emergency Leave', color: 'bg-orange-500' }
-];
-
-export const LEAVE_TYPES: { value: LeaveType; label: string }[] = [
-  { value: 'sick-leave', label: 'Sick Leave' },
-  { value: 'casual-leave', label: 'Casual Leave' },
-  { value: 'annual-leave', label: 'Annual Leave' },
-  { value: 'emergency-leave', label: 'Emergency Leave' },
-  { value: 'maternity-leave', label: 'Maternity Leave' },
-  { value: 'paternity-leave', label: 'Paternity Leave' }
-];
-
 // Application Constants
 export const APP_CONFIG = {
   name: 'Employee Management System',
   version: '1.0.0',
-  maxLeavePerYear: 42,
   retirementAge: 60,
   maxImageSize: 5 * 1024 * 1024, // 5MB
   imageAspectRatio: 4/3,

@@ -21,9 +21,14 @@ import { useEmployeeStore } from "../../store/employeeStore";
 import { useAttendanceStore } from "../../store/attendanceStore";
 import { useUIStore } from "../../store/uiStore";
 import { AttendanceStatus } from "../../types/attendance";
-import { ATTENDANCE_STATUSES } from "../../lib/constants";
 import { getDaysInMonth, getMonthName } from "../../lib/dateUtils";
 import { cn, formatName } from "../../lib/utils";
+
+const ATTENDANCE_STATUSES: { value: AttendanceStatus; label: string; color: string }[] = [
+  { value: 'present', label: 'Present', color: 'bg-green-500' },
+  { value: 'absent', label: 'Absent', color: 'bg-red-500' },
+  { value: 'half-day', label: 'Half Day', color: 'bg-yellow-500' }
+];
 
 const AttendanceGrid: React.FC = () => {
   const { employees } = useEmployeeStore();
@@ -145,24 +150,23 @@ const AttendanceGrid: React.FC = () => {
       selectedMonth,
       selectedYear
     );
-    if (!record) return { present: 0, absent: 0, leave: 0, total: 0 };
+    if (!record) return { present: 0, absent: 0, halfDay: 0, total: 0 };
 
     const stats = record.records.reduce(
       (acc, r) => {
         if (r.status === "present") acc.present++;
         else if (r.status === "absent") acc.absent++;
-        else if (r.status.includes("leave")) acc.leave++;
+        else if (r.status === "half-day") acc.halfDay++;
         acc.total++;
         return acc;
       },
-      { present: 0, absent: 0, leave: 0, total: 0 }
+      { present: 0, absent: 0, halfDay: 0, total: 0 }
     );
 
     return stats;
   };
 
   const exportAttendance = () => {
-    // This would trigger export functionality
     addNotification({
       type: "info",
       title: "Export Started",
@@ -278,7 +282,7 @@ const AttendanceGrid: React.FC = () => {
 
             {/* Legend */}
             <div className="flex items-center space-x-4 text-xs">
-              {ATTENDANCE_STATUSES.slice(0, 5).map((status) => (
+              {ATTENDANCE_STATUSES.map((status) => (
                 <div key={status.value} className="flex items-center space-x-1">
                   <div className={cn("w-3 h-3 rounded", status.color)}></div>
                   <span className="text-slate-custom-600">{status.label}</span>
@@ -360,7 +364,7 @@ const AttendanceGrid: React.FC = () => {
                             {stats.present}
                           </div>
                           <div className="text-red-600">{stats.absent}</div>
-                          <div className="text-blue-600">{stats.leave}</div>
+                          <div className="text-yellow-600">{stats.halfDay}</div>
                         </div>
                       </div>
 
@@ -404,9 +408,7 @@ const AttendanceGrid: React.FC = () => {
                                 ? "P"
                                 : status === "absent"
                                 ? "A"
-                                : status === "half-day"
-                                ? "H"
-                                : "L"
+                                : "H"
                               : date}
                           </button>
                         );
@@ -499,7 +501,7 @@ const AttendanceGrid: React.FC = () => {
               )}
 
               {/* Status Options */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 {ATTENDANCE_STATUSES.map((status) => (
                   <Button
                     key={status.value}
