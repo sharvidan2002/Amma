@@ -159,16 +159,16 @@ const EmployeeFilters: React.FC = () => {
                       <div>
                         <Label htmlFor="designation">Designation</Label>
                         <Select
-                          value={localFilters.designation || ""}
+                          value={localFilters.designation || "all"}
                           onValueChange={(value) =>
-                            updateLocalFilter("designation", value === "" ? undefined : value)
+                            updateLocalFilter("designation", value === "all" ? undefined : value)
                           }
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Select designation" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">All Designations</SelectItem>
+                            <SelectItem value="all">All Designations</SelectItem>
                             {DESIGNATIONS.map((designation) => (
                               <SelectItem key={designation} value={designation}>
                                 {designation}
@@ -181,16 +181,16 @@ const EmployeeFilters: React.FC = () => {
                       <div>
                         <Label htmlFor="ministry">Ministry</Label>
                         <Select
-                          value={localFilters.ministry || ""}
+                          value={localFilters.ministry || "all"}
                           onValueChange={(value) =>
-                            updateLocalFilter("ministry", value === "" ? undefined : value)
+                            updateLocalFilter("ministry", value === "all" ? undefined : value)
                           }
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Select ministry" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">All Ministries</SelectItem>
+                            <SelectItem value="all">All Ministries</SelectItem>
                             {ministries.map((ministry) => (
                               <SelectItem key={ministry} value={ministry}>
                                 {ministry}
@@ -203,16 +203,16 @@ const EmployeeFilters: React.FC = () => {
                       <div>
                         <Label htmlFor="gender">Gender</Label>
                         <Select
-                          value={localFilters.gender || ""}
+                          value={localFilters.gender || "all"}
                           onValueChange={(value) =>
-                            updateLocalFilter("gender", value === "" ? undefined : value)
+                            updateLocalFilter("gender", value === "all" ? undefined : value)
                           }
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Select gender" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">All Genders</SelectItem>
+                            <SelectItem value="all">All Genders</SelectItem>
                             {GENDERS.map((gender) => (
                               <SelectItem key={gender} value={gender}>
                                 {gender}
@@ -225,16 +225,16 @@ const EmployeeFilters: React.FC = () => {
                       <div>
                         <Label htmlFor="salary-code">Salary Code</Label>
                         <Select
-                          value={localFilters.salaryCode || ""}
+                          value={localFilters.salaryCode || "all"}
                           onValueChange={(value) =>
-                            updateLocalFilter("salaryCode", value === "" ? undefined : value)
+                            updateLocalFilter("salaryCode", value === "all" ? undefined : value)
                           }
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Select salary code" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">All Salary Codes</SelectItem>
+                            <SelectItem value="all">All Salary Codes</SelectItem>
                             {SALARY_CODES.filter(Boolean).map((code) => (
                               <SelectItem key={code} value={code}>
                                 {code}
