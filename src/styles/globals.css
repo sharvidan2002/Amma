@@ -136,6 +136,58 @@
   .attendance-cell.empty {
     @apply bg-pearl-100 text-slate-custom-400 hover:bg-pearl-200;
   }
+
+  /* Attendance Grid Specific Styles */
+  .attendance-grid {
+    @apply w-full border-collapse;
+  }
+
+  .attendance-grid-header {
+    @apply sticky top-0 bg-white z-10 border-b-2 border-pearl-300;
+  }
+
+  .attendance-grid-row {
+    @apply hover:bg-pearl-50 transition-colors duration-150;
+  }
+
+  .attendance-grid-cell {
+    @apply min-w-[40px] h-10 text-center border border-pearl-200 cursor-pointer transition-all duration-200;
+  }
+
+  .attendance-grid-cell:hover {
+    @apply scale-105 shadow-sm;
+  }
+
+  .attendance-grid-employee {
+    @apply sticky left-0 bg-white z-10 border-r-2 border-pearl-200 min-w-[250px];
+  }
+
+  .attendance-grid-stats {
+    @apply text-xs space-y-0.5;
+  }
+
+  /* Custom scrollbar for attendance grid */
+  .attendance-scroll::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .attendance-scroll::-webkit-scrollbar-track {
+    background: #f8fafc;
+  }
+
+  .attendance-scroll::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+  }
+
+  .attendance-scroll::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+
+  .attendance-scroll::-webkit-scrollbar-corner {
+    background: #f8fafc;
+  }
 }
 
 /* Custom scrollbar */
@@ -197,5 +249,21 @@
   .print-table th {
     background-color: #f8fafc;
     font-weight: bold;
+  }
+
+  /* Attendance grid print styles */
+  .attendance-grid {
+    font-size: 8px;
+  }
+
+  .attendance-grid-cell {
+    min-width: 20px;
+    height: 20px;
+    font-size: 6px;
+  }
+
+  .attendance-grid-employee {
+    min-width: 150px;
+    font-size: 8px;
   }
 }

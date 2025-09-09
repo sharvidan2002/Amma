@@ -1,8 +1,10 @@
-import React from 'react';
-import { Calendar, Users, TrendingUp, Clock, AlertCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { Calendar, Users, TrendingUp, Clock, AlertCircle, FileText, Plus } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import AttendanceCalendar from '../components/attendance/AttendanceCalendar';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import AttendanceGrid from '../components/attendance/AttendanceGrid';
+import LeaveManagement from '../components/attendance/LeaveManagement';
 import { useEmployeeStore } from '../store/employeeStore';
 import { useAttendanceStore } from '../store/attendanceStore';
 import { useUIStore } from '../store/uiStore';
@@ -19,6 +21,8 @@ const Attendance: React.FC = () => {
     setShowAlert
   } = useAttendanceStore();
   const { addNotification } = useUIStore();
+
+  const [activeTab, setActiveTab] = useState('attendance');
 
   const { month: currentMonth, year: currentYear } = getCurrentMonthYear();
   const monthlySummaries = getAllMonthlySummaries(selectedMonth, selectedYear);
@@ -38,7 +42,6 @@ const Attendance: React.FC = () => {
   const totalHalfDays = monthlySummaries.reduce((acc, summary) => acc + summary.totalHalfDays, 0);
 
   const handleBackupData = () => {
-    // This would trigger the backup process
     addNotification({
       type: 'info',
       title: 'Backup Process Started',
@@ -52,15 +55,17 @@ const Attendance: React.FC = () => {
     value,
     icon,
     color = "crimson",
-    subtitle
+    subtitle,
+    onClick
   }: {
     title: string;
     value: string | number;
     icon: React.ReactNode;
     color?: string;
     subtitle?: string;
+    onClick?: () => void;
   }) => (
-    <Card>
+    <Card className={onClick ? "cursor-pointer hover:shadow-lg transition-all duration-200" : ""} onClick={onClick}>
       <CardContent className="p-6">
         <div className="flex items-center justify-between">
           <div>
@@ -89,6 +94,20 @@ const Attendance: React.FC = () => {
           <p className="text-slate-custom-600">
             Track and manage employee attendance and leave applications
           </p>
+        </div>
+        <div className="flex items-center space-x-2">
+          <Button
+            variant="outline"
+            onClick={() => setActiveTab('leaves')}
+            className="text-blue-600 border-blue-300 hover:bg-blue-50"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            New Leave
+          </Button>
+          <Button variant="outline">
+            <FileText className="h-4 w-4 mr-2" />
+            Reports
+          </Button>
         </div>
       </div>
 
@@ -149,181 +168,73 @@ const Attendance: React.FC = () => {
           icon={<Clock className="h-6 w-6" />}
           color="orange"
           subtitle="Awaiting approval"
+          onClick={() => setActiveTab('leaves')}
         />
         <StatCard
-          title="Present Days"
-          value={totalPresent}
+          title="Monthly Summary"
+          value={`${totalPresent}P / ${totalAbsent}A`}
           icon={<Calendar className="h-6 w-6" />}
           color="blue"
-          subtitle={`${totalAbsent} absent, ${totalLeaves} on leave`}
+          subtitle={`${totalHalfDays} half days, ${totalLeaves} leaves`}
         />
       </div>
 
-      {/* Monthly Summary */}
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            Attendance Summary - {getMonthName(selectedMonth)} {selectedYear}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {monthlySummaries.length > 0 ? (
-            <div className="space-y-4">
-              {/* Overall Stats */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-pearl-50 rounded-lg">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">{totalPresent}</div>
-                  <div className="text-sm text-slate-custom-600">Present</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-red-600">{totalAbsent}</div>
-                  <div className="text-sm text-slate-custom-600">Absent</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-yellow-600">{totalHalfDays}</div>
-                  <div className="text-sm text-slate-custom-600">Half Days</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">{totalLeaves}</div>
-                  <div className="text-sm text-slate-custom-600">Leaves</div>
-                </div>
-              </div>
+      {/* Main Content Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2 max-w-md">
+          <TabsTrigger value="attendance" className="flex items-center space-x-2">
+            <Calendar className="h-4 w-4" />
+            <span>Attendance Sheet</span>
+          </TabsTrigger>
+          <TabsTrigger value="leaves" className="flex items-center space-x-2">
+            <FileText className="h-4 w-4" />
+            <span>Leave Management</span>
+          </TabsTrigger>
+        </TabsList>
 
-              {/* Top Performers */}
-              <div>
-                <h3 className="font-medium text-slate-custom-800 mb-3">Top Attendance</h3>
-                <div className="space-y-2">
-                  {monthlySummaries
-                    .sort((a, b) => b.attendancePercentage - a.attendancePercentage)
-                    .slice(0, 5)
-                    .map((summary, index) => {
-                      const employee = employees.find(emp => emp._id === summary.employeeId);
-                      return (
-                        <div key={summary.employeeId} className="flex items-center justify-between p-3 bg-white rounded-lg border border-pearl-200">
-                          <div className="flex items-center space-x-3">
-                            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
-                              index === 0 ? 'bg-yellow-100 text-yellow-800' :
-                              index === 1 ? 'bg-gray-100 text-gray-800' :
-                              index === 2 ? 'bg-orange-100 text-orange-800' :
-                              'bg-blue-100 text-blue-800'
-                            }`}>
-                              {index + 1}
-                            </div>
-                            {employee?.image ? (
-                              <img
-                                src={employee.image}
-                                alt={employee.fullName}
-                                className="w-8 h-8 rounded-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-8 h-8 rounded-full bg-pearl-200 flex items-center justify-center">
-                                <span className="text-xs text-slate-custom-500">
-                                  {employee?.fullName.charAt(0).toUpperCase()}
-                                </span>
-                              </div>
-                            )}
-                            <div>
-                              <p className="text-sm font-medium text-slate-custom-800">
-                                {employee?.fullName || 'Unknown Employee'}
-                              </p>
-                              <p className="text-xs text-slate-custom-500">
-                                {employee?.designation}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-sm font-bold text-green-600">
-                              {summary.attendancePercentage}%
-                            </div>
-                            <div className="text-xs text-slate-custom-500">
-                              {summary.totalPresent}P {summary.totalAbsent}A {summary.totalLeaves}L
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <Calendar className="h-16 w-16 mx-auto text-slate-custom-300 mb-4" />
-              <h3 className="text-lg font-medium text-slate-custom-800 mb-2">No Attendance Data</h3>
-              <p className="text-slate-custom-600">
-                No attendance records found for {getMonthName(selectedMonth)} {selectedYear}.
-                Start marking attendance to see summaries here.
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+        <TabsContent value="attendance" className="space-y-6">
+          <AttendanceGrid />
+        </TabsContent>
 
-      {/* Pending Leave Applications */}
-      {pendingLeaves.length > 0 && (
+        <TabsContent value="leaves" className="space-y-6">
+          <LeaveManagement />
+        </TabsContent>
+      </Tabs>
+
+      {/* Quick Stats Summary */}
+      {monthlySummaries.length > 0 && activeTab === 'attendance' && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>Pending Leave Applications</span>
-              <span className="text-sm bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">
-                {pendingLeaves.length}
-              </span>
+            <CardTitle>
+              Quick Summary - {getMonthName(selectedMonth)} {selectedYear}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {pendingLeaves.map((leave) => {
-                const employee = employees.find(emp => emp._id === leave.employeeId);
-                return (
-                  <div key={leave._id} className="flex items-center justify-between p-4 bg-pearl-50 rounded-lg">
-                    <div className="flex items-center space-x-4">
-                      {employee?.image ? (
-                        <img
-                          src={employee.image}
-                          alt={employee.fullName}
-                          className="w-10 h-10 rounded-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-10 h-10 rounded-full bg-pearl-200 flex items-center justify-center">
-                          <span className="text-sm text-slate-custom-500">
-                            {employee?.fullName.charAt(0).toUpperCase()}
-                          </span>
-                        </div>
-                      )}
-                      <div>
-                        <p className="font-medium text-slate-custom-800">
-                          {employee?.fullName || 'Unknown Employee'}
-                        </p>
-                        <p className="text-sm text-slate-custom-600">
-                          {leave.leaveType} • {leave.startDate} to {leave.endDate}
-                        </p>
-                        <p className="text-xs text-slate-custom-500">
-                          Reason: {leave.reason}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                        {leave.totalDays} day{leave.totalDays !== 1 ? 's' : ''}
-                      </span>
-                      <div className="flex space-x-2">
-                        <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700">
-                          Reject
-                        </Button>
-                        <Button size="sm">
-                          Approve
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <div className="text-center p-4 bg-green-50 rounded-lg">
+                <div className="text-2xl font-bold text-green-600">{totalPresent}</div>
+                <div className="text-sm text-green-700">Total Present</div>
+              </div>
+              <div className="text-center p-4 bg-red-50 rounded-lg">
+                <div className="text-2xl font-bold text-red-600">{totalAbsent}</div>
+                <div className="text-sm text-red-700">Total Absent</div>
+              </div>
+              <div className="text-center p-4 bg-yellow-50 rounded-lg">
+                <div className="text-2xl font-bold text-yellow-600">{totalHalfDays}</div>
+                <div className="text-sm text-yellow-700">Half Days</div>
+              </div>
+              <div className="text-center p-4 bg-blue-50 rounded-lg">
+                <div className="text-2xl font-bold text-blue-600">{totalLeaves}</div>
+                <div className="text-sm text-blue-700">Total Leaves</div>
+              </div>
+              <div className="text-center p-4 bg-purple-50 rounded-lg">
+                <div className="text-2xl font-bold text-purple-600">{averageAttendance}%</div>
+                <div className="text-sm text-purple-700">Avg Attendance</div>
+              </div>
             </div>
           </CardContent>
         </Card>
       )}
-
-      {/* Main Attendance Calendar */}
-      <AttendanceCalendar />
     </div>
   );
 };

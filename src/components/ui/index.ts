@@ -40,3 +40,9 @@ export {
   TableRow
 } from './table';
 export { Calendar } from './calendar';
+export {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent
+} from './tabs';
