@@ -4,8 +4,6 @@ import {
   Users,
   UserPlus,
   Calendar,
-  FileText,
-  Settings,
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
@@ -45,18 +43,6 @@ const sidebarItems: SidebarItem[] = [
     label: 'Attendance',
     icon: <Calendar className="h-5 w-5" />,
     path: '/attendance'
-  },
-  {
-    id: 'reports',
-    label: 'Reports',
-    icon: <FileText className="h-5 w-5" />,
-    path: '/reports'
-  },
-  {
-    id: 'settings',
-    label: 'Settings',
-    icon: <Settings className="h-5 w-5" />,
-    path: '/settings'
   }
 ];
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Users, TrendingUp, FileText } from 'lucide-react';
+import { Calendar, Users, TrendingUp } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import AttendanceGrid from '../components/attendance/AttendanceGrid';
@@ -92,12 +92,7 @@ const Attendance: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center space-x-2">
-          <Button variant="outline">
-            <FileText className="h-4 w-4 mr-2" />
-            Reports
-          </Button>
-          {/* optionally expose quick backup here too */}
-          <Button onClick={handleBackupData}>Backup</Button>
+          <Button onClick={handleBackupData}>Backup Data</Button>
         </div>
       </div>
 

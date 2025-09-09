@@ -159,8 +159,7 @@ export const DB_CONFIG = {
   collections: {
     employees: 'employees',
     attendance: 'attendance',
-    leaves: 'leaves',
-    settings: 'settings'
+    leaves: 'leaves'
   }
 };
 

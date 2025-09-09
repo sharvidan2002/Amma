@@ -40,7 +40,6 @@ impl Collections {
     pub const EMPLOYEES: &'static str = "employees";
     pub const ATTENDANCE: &'static str = "attendance";
     pub const LEAVES: &'static str = "leaves";
-    pub const SETTINGS: &'static str = "settings";
 }
 
 /// Database helper functions
