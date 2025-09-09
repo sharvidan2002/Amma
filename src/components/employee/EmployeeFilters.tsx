@@ -41,9 +41,8 @@ const EmployeeFilters: React.FC = () => {
   // Calculate active filter count safely
   const activeFilterCount = Object.entries(filters).filter(([key, value]) => {
     if (key === 'ageRange' && value && typeof value === 'object') {
-      const ageRange = value as { min?: number; max?: number };
-      return (ageRange.min !== undefined && ageRange.min > 0) ||
-             (ageRange.max !== undefined && ageRange.max < 100);
+      const ageRange = value as { min: number; max: number };
+      return ageRange.min > 0 || ageRange.max < 100;
     }
     return value !== undefined && value !== "" && value !== null;
   }).length;
@@ -54,16 +53,16 @@ const EmployeeFilters: React.FC = () => {
 
     Object.entries(localFilters).forEach(([key, value]) => {
       if (key === 'ageRange' && value && typeof value === 'object') {
-        const ageRange = value as { min?: number; max?: number };
-        if ((ageRange.min !== undefined && ageRange.min > 0) ||
-            (ageRange.max !== undefined && ageRange.max < 100)) {
+        const ageRange = value as { min: number; max: number };
+        if (ageRange.min > 0 || ageRange.max < 100) {
           cleanedFilters.ageRange = {
-            min: ageRange.min || 0,
-            max: ageRange.max || 100
+            min: ageRange.min,
+            max: ageRange.max
           };
         }
       } else if (value && value !== '') {
-        (cleanedFilters as any)[key] = value;
+        // Type-safe assignment using proper typing
+        (cleanedFilters as Record<string, unknown>)[key] = value;
       }
     });
 
@@ -77,7 +76,7 @@ const EmployeeFilters: React.FC = () => {
     setIsOpen(false);
   };
 
-  const updateLocalFilter = (key: keyof EmployeeFilter, value: any) => {
+  const updateLocalFilter = (key: keyof EmployeeFilter, value: string | undefined) => {
     setLocalFilters((prev) => ({
       ...prev,
       [key]: value || undefined,
@@ -89,9 +88,9 @@ const EmployeeFilters: React.FC = () => {
     setLocalFilters((prev) => ({
       ...prev,
       ageRange: {
-        ...prev.ageRange,
-        [type]: numValue,
-      },
+        min: type === 'min' ? (numValue ?? 0) : (prev.ageRange?.min ?? 0),
+        max: type === 'max' ? (numValue ?? 100) : (prev.ageRange?.max ?? 100),
+      }
     }));
   };
 
@@ -236,7 +235,7 @@ const EmployeeFilters: React.FC = () => {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="">All Salary Codes</SelectItem>
-                            {SALARY_CODES.map((code) => (
+                            {SALARY_CODES.filter(Boolean).map((code) => (
                               <SelectItem key={code} value={code}>
                                 {code}
                               </SelectItem>
@@ -275,7 +274,7 @@ const EmployeeFilters: React.FC = () => {
                           placeholder="Min age"
                           min="18"
                           max="70"
-                          value={localFilters.ageRange?.min || ""}
+                          value={localFilters.ageRange?.min === 0 ? "" : localFilters.ageRange?.min || ""}
                           onChange={(e) => updateAgeRange("min", e.target.value)}
                         />
                         <Input
@@ -283,7 +282,7 @@ const EmployeeFilters: React.FC = () => {
                           placeholder="Max age"
                           min="18"
                           max="70"
-                          value={localFilters.ageRange?.max || ""}
+                          value={localFilters.ageRange?.max === 100 ? "" : localFilters.ageRange?.max || ""}
                           onChange={(e) => updateAgeRange("max", e.target.value)}
                         />
                       </div>
